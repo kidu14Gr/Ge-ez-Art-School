@@ -12,6 +12,33 @@ $stmt->execute();
 $res = $stmt->get_result();
 while ($r = $res->fetch_assoc()) $enrolled[] = $r;
 $stmt->close();
+
+// Fetch Announcements
+$announcements = [];
+$res = $db->query("SELECT title, content, created_at FROM announcements WHERE target_role IN ('all', 'student') ORDER BY created_at DESC LIMIT 3");
+while ($r = $res->fetch_assoc()) $announcements[] = $r;
+
+// Fetch Events
+$events = [];
+$res = $db->query("SELECT title, description, event_date, location FROM events WHERE event_date >= NOW() ORDER BY event_date ASC LIMIT 2");
+while ($r = $res->fetch_assoc()) $events[] = $r;
+
+// Handle Artwork Upload
+$message = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_artwork'])) {
+    $title = $_POST['title'];
+    $image_path = 'images/gallery/' . basename($_FILES['artwork']['name']);
+    
+    // In a real app, we'd move the uploaded file. For this demo, we'll assume it exists or use a dummy path.
+    // move_uploaded_file($_FILES['artwork']['tmp_name'], $image_path);
+    
+    $stmt = $db->prepare('INSERT INTO artworks (student_id, title, image_path) VALUES (?, ?, ?)');
+    $stmt->bind_param('iss', $user['id'], $title, $image_path);
+    if ($stmt->execute()) {
+        $message = "Artwork submitted for approval!";
+    }
+    $stmt->close();
+}
 ?>
 <!doctype html>
 <html lang="<?php echo $lang === 'am' ? 'am' : 'en'; ?>">
@@ -47,6 +74,9 @@ $stmt->close();
 </header>
 
 <main class="container">
+    <?php if ($message): ?>
+        <div class="flash"><?php echo $message; ?></div>
+    <?php endif; ?>
     <div class="dashboard-grid">
         <!-- Sidebar -->
         <aside class="sidebar-card reveal active">
@@ -78,33 +108,89 @@ $stmt->close();
                     <div class="value"><?php echo count($enrolled); ?></div>
                 </div>
                 <div class="stat-card reveal active" style="transition-delay: 0.1s;">
-                    <h4><?php echo t('notifications'); ?></h4>
-                    <div class="value">3</div>
+                    <h4><?php echo t('submissions'); ?></h4>
+                    <div class="value">
+                        <?php echo $db->query("SELECT COUNT(*) FROM submissions s JOIN enrollments e ON s.enrollment_id = e.id WHERE e.user_id = " . $user['id'])->fetch_row()[0]; ?>
+                    </div>
                 </div>
                 <div class="stat-card reveal active" style="transition-delay: 0.2s;">
-                    <h4><?php echo t('art_points'); ?></h4>
-                    <div class="value">120</div>
+                    <h4>My Artworks</h4>
+                    <div class="value">
+                        <?php echo $db->query("SELECT COUNT(*) FROM artworks WHERE student_id = " . $user['id'])->fetch_row()[0]; ?>
+                    </div>
                 </div>
             </div>
 
-            <!-- Enrolled Courses -->
-            <div class="content-card reveal active" style="transition-delay: 0.3s;">
-                <h3 style="margin-bottom: 20px;"><?php echo t('my_active_programs'); ?></h3>
-                <?php if (empty($enrolled)): ?>
-                    <p class="muted"><?php echo t('no_enrollments'); ?> <a href="/art-school-website/courses.php" style="color: var(--accent); font-weight: 600;"><?php echo t('start_exploring'); ?></a>.</p>
-                <?php else: ?>
-                    <ul class="dashboard-list">
-                        <?php foreach ($enrolled as $c): ?>
-                            <li>
-                                <div class="course-meta">
-                                    <span style="font-weight: 700; font-size: 1.1rem;"><?php echo htmlspecialchars($c['title']); ?></span>
-                                    <span class="teacher"><?php echo t('lead_by'); ?> <?php echo htmlspecialchars($c['teacher_name'] ?? 'Senior Mentor'); ?></span>
-                                </div>
-                                <a href="#" class="btn premium-btn" style="padding: 8px 16px; font-size: 0.8rem;"><?php echo t('continue_learning'); ?></a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                <?php endif; ?>
+            <div class="grid-2">
+                <div class="left-col">
+                    <!-- Enrolled Courses -->
+                    <div class="content-card reveal active" style="transition-delay: 0.3s;">
+                        <h3 style="margin-bottom: 20px;"><?php echo t('my_active_programs'); ?></h3>
+                        <?php if (empty($enrolled)): ?>
+                            <p class="muted"><?php echo t('no_enrollments'); ?> <a href="/art-school-website/courses.php" style="color: var(--accent); font-weight: 600;"><?php echo t('start_exploring'); ?></a>.</p>
+                        <?php else: ?>
+                            <ul class="dashboard-list">
+                                <?php foreach ($enrolled as $c): ?>
+                                    <li>
+                                        <div class="course-meta">
+                                            <span style="font-weight: 700; font-size: 1.1rem;"><?php echo htmlspecialchars($c['title']); ?></span>
+                                            <span class="teacher"><?php echo t('lead_by'); ?> <?php echo htmlspecialchars($c['teacher_name'] ?? 'Senior Mentor'); ?></span>
+                                        </div>
+                                        <a href="#" class="btn premium-btn" style="padding: 8px 16px; font-size: 0.8rem;"><?php echo t('continue_learning'); ?></a>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Upload Artwork -->
+                    <div class="content-card reveal active" style="margin-top: 20px;">
+                        <h3>Submit to Gallery</h3>
+                        <form method="POST" enctype="multipart/form-data" style="margin-top: 15px;">
+                            <input type="hidden" name="upload_artwork" value="1">
+                            <div class="input-group">
+                                <input type="text" name="title" required placeholder=" ">
+                                <label>Artwork Title</label>
+                            </div>
+                            <div class="input-group">
+                                <input type="file" name="artwork" required>
+                            </div>
+                            <button type="submit" class="btn premium-btn">Upload for Approval</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="right-col">
+                    <!-- Announcements -->
+                    <div class="content-card reveal active">
+                        <h3><?php echo t('announcements'); ?></h3>
+                        <ul class="dashboard-list">
+                            <?php foreach ($announcements as $ann): ?>
+                                <li>
+                                    <div class="course-meta">
+                                        <span style="font-weight: 700;"><?php echo htmlspecialchars($ann['title']); ?></span>
+                                        <p style="font-size: 0.85rem; margin-top: 5px;"><?php echo htmlspecialchars($ann['content']); ?></p>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+
+                    <!-- Upcoming Events -->
+                    <div class="content-card reveal active" style="margin-top: 20px;">
+                        <h3>Upcoming Events</h3>
+                        <ul class="dashboard-list">
+                            <?php foreach ($events as $ev): ?>
+                                <li>
+                                    <div class="course-meta">
+                                        <span style="font-weight: 700;"><?php echo htmlspecialchars($ev['title']); ?></span>
+                                        <p style="font-size: 0.85rem; margin-top: 5px;">📅 <?php echo date('M d, H:i', strtotime($ev['event_date'])); ?><br>📍 <?php echo htmlspecialchars($ev['location']); ?></p>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

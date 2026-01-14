@@ -39,11 +39,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
 
         $hash = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $db->prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)');
-        $stmt->bind_param('ssss', $name, $email, $hash, $role);
+        $status = ($role === 'teacher') ? 'pending' : 'active';
+        $stmt = $db->prepare('INSERT INTO users (name, email, password, role, status) VALUES (?, ?, ?, ?, ?)');
+        $stmt->bind_param('sssss', $name, $email, $hash, $role, $status);
         
         if ($stmt->execute()) {
-            $_SESSION['flash'] = t('flash_account_created');
+            if ($status === 'pending') {
+                $_SESSION['flash'] = "Account created! Please wait for admin approval.";
+            } else {
+                $_SESSION['flash'] = t('flash_account_created');
+            }
             header('Location: /art-school-website/login.php');
         } else {
             $_SESSION['flash'] = t('flash_registration_failed');
@@ -64,12 +69,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $db = getDB();
-    $stmt = $db->prepare('SELECT id, name, email, password, role FROM users WHERE email = ? AND role = ? LIMIT 1');
+    $stmt = $db->prepare('SELECT id, name, email, password, role, status FROM users WHERE email = ? AND role = ? LIMIT 1');
     $stmt->bind_param('ss', $email, $role);
     $stmt->execute();
-    $stmt->bind_result($id, $name, $email_db, $hash, $role_db);
+    $stmt->bind_result($id, $name, $email_db, $hash, $role_db, $status_db);
     if ($stmt->fetch()) {
         if (password_verify($password, $hash)) {
+            if ($status_db !== 'active') {
+                $stmt->close();
+                $_SESSION['flash'] = "Your account is " . $status_db . ". Please contact admin.";
+                header('Location: /art-school-website/login.php');
+                exit;
+            }
             // Login success
             $_SESSION['user'] = [
                 'id' => $id,
@@ -83,6 +94,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             } elseif ($role_db === 'teacher') {
                 header('Location: /art-school-website/dashboard-teacher.php');
+                exit;
+            } elseif ($role_db === 'admin') {
+                header('Location: /art-school-website/dashboard-admin.php');
                 exit;
             } else {
                 header('Location: /art-school-website/index.php');

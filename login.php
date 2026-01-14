@@ -38,11 +38,12 @@ unset($_SESSION['flash']);
                     <option value="" disabled selected hidden></option>
                     <option value="student"><?php echo t('role_student'); ?></option>
                     <option value="teacher"><?php echo t('role_teacher'); ?></option>
+                    <option value="admin">Admin</option>
                 </select>
                 <label for="role"><?php echo t('role'); ?></label>
             </div>
 
-            <button type="submit" class="btn primary"><?php echo t('submit'); ?></button>
+            <button type="submit" class="btn premium-btn" style="width:100%;"><?php echo t('submit'); ?></button>
             <p style="text-align: center; margin-top: 20px; font-size: 0.9rem; color: #666;">
                 <?php echo t('dont_have_account'); ?> <a href="/art-school-website/register.php" style="color: var(--accent); font-weight: 600;"><?php echo t('apply_here'); ?></a>
             </p>

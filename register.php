@@ -38,9 +38,15 @@ unset($_SESSION['flash']);
                 <label for="password"><?php echo t('create_password'); ?></label>
             </div>
 
+            <div class="input-group">
+                <input id="confirm_password" name="confirm_password" type="password" placeholder=" " required>
+                <label for="confirm_password"><?php echo t('confirm_password'); ?></label>
+                <span id="password_match_status" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-weight: bold; color: #ff4d4d;">✘</span>
+            </div>
+
             <input type="hidden" name="role" value="student">
 
-            <button type="submit" class="btn primary"><?php echo t('create_account'); ?></button>
+            <button type="submit" class="btn premium-btn" style="width:100%;"><?php echo t('create_account'); ?></button>
             <p style="text-align: center; margin-top: 20px; font-size: 0.9rem; color: #666;">
                 <?php echo t('already_have_account'); ?> <a href="/art-school-website/login.php" style="color: var(--accent); font-weight: 600;"><?php echo t('login_here'); ?></a>
             </p>
@@ -48,5 +54,34 @@ unset($_SESSION['flash']);
     </div>
 </div>
 <script src="/art-school-website/js/main.js"></script>
+<script>
+    const password = document.getElementById('password');
+    const confirm_password = document.getElementById('confirm_password');
+    const status = document.getElementById('password_match_status');
+    const form = document.getElementById('registerForm');
+
+    function checkMatch() {
+        if (confirm_password.value === '') {
+            status.textContent = '✘';
+            status.style.color = '#ff4d4d';
+        } else if (password.value === confirm_password.value) {
+            status.textContent = '✔';
+            status.style.color = '#2ecc71';
+        } else {
+            status.textContent = '✘';
+            status.style.color = '#ff4d4d';
+        }
+    }
+
+    password.addEventListener('input', checkMatch);
+    confirm_password.addEventListener('input', checkMatch);
+
+    form.addEventListener('submit', function(e) {
+        if (password.value !== confirm_password.value) {
+            e.preventDefault();
+            alert('Passwords do not match!');
+        }
+    });
+</script>
 </body>
 </html>

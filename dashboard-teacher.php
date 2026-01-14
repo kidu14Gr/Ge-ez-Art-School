@@ -23,6 +23,39 @@ foreach ($courses as $c) {
     $total_students += $count;
     $stmt->close();
 }
+
+// Recent Submissions for teacher's courses
+$recent_submissions = [];
+if (!empty($courses)) {
+    $cids = array_column($courses, 'id');
+    $placeholders = implode(',', array_fill(0, count($cids), '?'));
+    $stmt = $db->prepare("SELECT s.id, s.title, s.submitted_at, u.name as student_name, c.title as course_title FROM submissions s JOIN enrollments e ON s.enrollment_id = e.id JOIN users u ON e.user_id = u.id JOIN courses c ON e.course_id = c.id WHERE e.course_id IN ($placeholders) ORDER BY s.submitted_at DESC LIMIT 5");
+    $types = str_repeat('i', count($cids));
+    $stmt->bind_param($types, ...$cids);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($r = $res->fetch_assoc()) $recent_submissions[] = $r;
+    $stmt->close();
+}
+
+// Announcements
+$announcements = [];
+$res = $db->query("SELECT title, content, created_at FROM announcements WHERE target_role IN ('all', 'teacher') ORDER BY created_at DESC LIMIT 3");
+while ($r = $res->fetch_assoc()) $announcements[] = $r;
+
+// Handle Grading
+$message = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['grade_submission'])) {
+    $sid = intval($_POST['submission_id']);
+    $grade = $_POST['grade'];
+    $feedback = $_POST['feedback'];
+    $stmt = $db->prepare('UPDATE submissions SET grade = ?, feedback = ? WHERE id = ?');
+    $stmt->bind_param('ssi', $grade, $feedback, $sid);
+    if ($stmt->execute()) {
+        $message = "Submission graded successfully.";
+    }
+    $stmt->close();
+}
 ?>
 <!doctype html>
 <html lang="<?php echo $lang === 'am' ? 'am' : 'en'; ?>">
@@ -58,6 +91,9 @@ foreach ($courses as $c) {
 </header>
 
 <main class="container">
+    <?php if ($message): ?>
+        <div class="flash"><?php echo $message; ?></div>
+    <?php endif; ?>
     <div class="dashboard-grid">
         <!-- Sidebar -->
         <aside class="sidebar-card reveal active">
@@ -99,39 +135,113 @@ foreach ($courses as $c) {
             </div>
 
             <!-- Teaching Courses -->
-            <div class="content-card reveal active" style="transition-delay: 0.3s;">
-                <h3 style="margin-bottom: 20px;"><?php echo t('my_programs'); ?></h3>
-                <?php if (empty($courses)): ?>
-                    <p class="muted"><?php echo t('no_assigned_courses'); ?></p>
-                <?php else: ?>
-                    <ul class="dashboard-list">
-                        <?php foreach ($courses as $c): ?>
-                            <li>
-                                <div class="course-meta">
-                                    <span style="font-weight: 700; font-size: 1.1rem;"><?php echo htmlspecialchars($c['title']); ?></span>
-                                    <?php
-                                    $stmt = $db->prepare('SELECT COUNT(*) FROM enrollments WHERE course_id = ?');
-                                    $stmt->bind_param('i', $c['id']);
-                                    $stmt->execute();
-                                    $stmt->bind_result($s_count);
-                                    $stmt->fetch();
-                                    $stmt->close();
-                                    ?>
-                                    <span class="teacher"><?php echo $s_count; ?> <?php echo t('students_enrolled'); ?></span>
-                                </div>
-                                <div style="display: flex; gap: 10px;">
-                                    <a href="#" class="btn outline-btn" style="padding: 8px 16px; font-size: 0.8rem; color: var(--text-main); border-color: #eee;"><?php echo t('edit'); ?></a>
-                                    <a href="#" class="btn premium-btn" style="padding: 8px 16px; font-size: 0.8rem;"><?php echo t('view_class'); ?></a>
-                                </div>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                <?php endif; ?>
+            <div class="grid-2">
+                <div class="left-col">
+                    <div class="content-card reveal active" style="transition-delay: 0.3s;">
+                        <h3 style="margin-bottom: 20px;"><?php echo t('my_programs'); ?></h3>
+                        <?php if (empty($courses)): ?>
+                            <p class="muted"><?php echo t('no_assigned_courses'); ?></p>
+                        <?php else: ?>
+                            <ul class="dashboard-list">
+                                <?php foreach ($courses as $c): ?>
+                                    <li>
+                                        <div class="course-meta">
+                                            <span style="font-weight: 700; font-size: 1.1rem;"><?php echo htmlspecialchars($c['title']); ?></span>
+                                            <?php
+                                            $stmt = $db->prepare('SELECT COUNT(*) FROM enrollments WHERE course_id = ?');
+                                            $stmt->bind_param('i', $c['id']);
+                                            $stmt->execute();
+                                            $stmt->bind_result($s_count);
+                                            $stmt->fetch();
+                                            $stmt->close();
+                                            ?>
+                                            <span class="teacher"><?php echo $s_count; ?> <?php echo t('students_enrolled'); ?></span>
+                                        </div>
+                                        <div style="display: flex; gap: 10px;">
+                                            <a href="#" class="btn outline-btn" style="padding: 8px 16px; font-size: 0.8rem; color: var(--text-main); border-color: #eee;"><?php echo t('edit'); ?></a>
+                                            <a href="#" class="btn premium-btn" style="padding: 8px 16px; font-size: 0.8rem;"><?php echo t('view_class'); ?></a>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Recent Submissions -->
+                    <div class="content-card reveal active" style="margin-top: 20px;">
+                        <h3>Recent Submissions</h3>
+                        <ul class="dashboard-list">
+                            <?php if (empty($recent_submissions)): ?>
+                                <p class="muted">No recent submissions.</p>
+                            <?php else: ?>
+                                <?php foreach ($recent_submissions as $s): ?>
+                                    <li>
+                                        <div class="course-meta">
+                                            <span style="font-weight: 700;"><?php echo htmlspecialchars($s['title']); ?></span>
+                                            <span class="teacher"><?php echo htmlspecialchars($s['student_name']); ?> • <?php echo htmlspecialchars($s['course_title']); ?></span>
+                                        </div>
+                                        <button class="btn premium-btn" style="padding: 6px 12px; font-size: 0.75rem;" onclick="openGradeModal(<?php echo htmlspecialchars(json_encode($s)); ?>)">Grade</button>
+                                    </li>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="right-col">
+                    <!-- Announcements -->
+                    <div class="content-card reveal active">
+                        <h3><?php echo t('announcements'); ?></h3>
+                        <ul class="dashboard-list">
+                            <?php foreach ($announcements as $ann): ?>
+                                <li>
+                                    <div class="course-meta">
+                                        <span style="font-weight: 700;"><?php echo htmlspecialchars($ann['title']); ?></span>
+                                        <p style="font-size: 0.85rem; margin-top: 5px;"><?php echo htmlspecialchars($ann['content']); ?></p>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grade Modal -->
+            <div id="gradeModal" class="admin-modal">
+                <div class="modal-content">
+                    <h3 id="gradeModalTitle">Grade Submission</h3>
+                    <form method="POST" style="margin-top: 20px;">
+                        <input type="hidden" name="grade_submission" value="1">
+                        <input type="hidden" name="submission_id" id="grade_sid">
+                        <div class="input-group">
+                            <input type="text" name="grade" required placeholder=" ">
+                            <label>Grade (e.g. A, 95, Pass)</label>
+                        </div>
+                        <div class="input-group">
+                            <textarea name="feedback" placeholder="Feedback" style="width:100%; min-height:100px; border:2px solid #eee; border-radius:12px; padding:12px;"></textarea>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:20px;">
+                            <button type="submit" class="btn premium-btn">Submit Grade</button>
+                            <button type="button" class="btn outline-btn" onclick="closeModal('gradeModal')" style="color:#000; border-color:#000;">Cancel</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </main>
 
 <script src="/art-school-website/js/main.js"></script>
+<script>
+    function openGradeModal(submission) {
+        document.getElementById('grade_sid').value = submission.id;
+        document.getElementById('gradeModalTitle').innerText = 'Grade: ' + submission.title;
+        document.getElementById('gradeModal').classList.add('active');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('active');
+    }
+</script>
 </body>
 </html>
