@@ -57,6 +57,26 @@ function enroll_course($user_id, $course_id) {
     $stmt->bind_param('ii', $user_id, $course_id);
     $ok = $stmt->execute();
     $stmt->close();
+    
+    if ($ok) {
+        $c_stmt = $db->prepare('SELECT title, teacher_id FROM courses WHERE id = ?');
+        $c_stmt->bind_param('i', $course_id);
+        $c_stmt->execute();
+        $course = $c_stmt->get_result()->fetch_assoc();
+        $c_stmt->close();
+        
+        if ($course) {
+            add_notification($user_id, "You have successfully enrolled in " . $course['title']);
+            if ($course['teacher_id']) {
+                $u_stmt = $db->prepare('SELECT name FROM users WHERE id = ?');
+                $u_stmt->bind_param('i', $user_id);
+                $u_stmt->execute();
+                $u_name = $u_stmt->get_result()->fetch_assoc()['name'];
+                $u_stmt->close();
+                add_notification($course['teacher_id'], $u_name . " has enrolled in your course: " . $course['title']);
+            }
+        }
+    }
     return $ok;
 }
 
@@ -69,5 +89,14 @@ function is_enrolled($user_id, $course_id) {
     $res = $stmt->num_rows > 0;
     $stmt->close();
     return $res;
+}
+
+function add_notification($user_id, $message) {
+    $db = getDB();
+    $stmt = $db->prepare('INSERT INTO notifications (user_id, message) VALUES (?, ?)');
+    $stmt->bind_param('is', $user_id, $message);
+    $ok = $stmt->execute();
+    $stmt->close();
+    return $ok;
 }
 ?>

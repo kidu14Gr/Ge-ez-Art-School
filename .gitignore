@@ -32,3 +32,6 @@ php/db.php
 # Zencoder/Zenflow (if these are tool-specific and not meant for the repo)
 .zencoder/
 .zenflow/
+
+
+summary.md

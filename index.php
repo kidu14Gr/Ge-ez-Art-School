@@ -32,6 +32,11 @@ $lang = get_lang();
                 <a href="?lang=am" class="lang-btn <?php echo $lang === 'am' ? 'active' : ''; ?>">አማ</a>
             </div>
             <div class="nav-divider"></div>
+            <div class="theme-toggle" id="themeToggle">
+                <button class="theme-toggle-btn active" data-theme="light">☀️</button>
+                <button class="theme-toggle-btn" data-theme="dark">🌙</button>
+            </div>
+            <div class="nav-divider"></div>
             <?php if (empty(current_user())): ?>
                 <a href="/art-school-website/login.php" class="nav-login"><?php echo t('login'); ?></a>
             <?php else: ?>
@@ -139,10 +144,28 @@ $lang = get_lang();
             <h2><?php echo t('section_gallery_title'); ?></h2>
         </div>
         <div class="gallery-grid-v2">
-            <div class="gallery-item reveal"><img src="images/gallary1.png" alt="Student Work" data-full="images/gallary1.png"></div>
-            <div class="gallery-item reveal"><img src="images/gallary2.png" alt="Student Work" data-full="images/gallary2.png"></div>
-            <div class="gallery-item reveal"><img src="images/calligraphy.png" alt="Student Work" data-full="images/calligraphy.png"></div>
-            <div class="gallery-item reveal"><img src="images/fashion_textile.png" alt="Student Work" data-full="images/fashion_textile.png"></div>
+            <?php
+            $db = getDB();
+            $gallery_res = $db->query("SELECT title, image_path FROM artworks WHERE status IN ('approved', 'featured') ORDER BY (status = 'featured') DESC, created_at DESC LIMIT 6");
+            if ($gallery_res && $gallery_res->num_rows > 0):
+                while ($art = $gallery_res->fetch_assoc()):
+            ?>
+                <div class="gallery-item reveal">
+                    <img src="<?php echo htmlspecialchars($art['image_path']); ?>" alt="<?php echo htmlspecialchars($art['title']); ?>" data-full="<?php echo htmlspecialchars($art['image_path']); ?>">
+                    <div class="gallery-caption"><?php echo htmlspecialchars($art['title']); ?></div>
+                </div>
+            <?php 
+                endwhile;
+            else:
+            ?>
+                <div class="gallery-item reveal"><img src="images/gallary1.png" alt="Student Work" data-full="images/gallary1.png"></div>
+                <div class="gallery-item reveal"><img src="images/gallary2.png" alt="Student Work" data-full="images/gallary2.png"></div>
+                <div class="gallery-item reveal"><img src="images/calligraphy.png" alt="Student Work" data-full="images/calligraphy.png"></div>
+                <div class="gallery-item reveal"><img src="images/fashion_textile.png" alt="Student Work" data-full="images/fashion_textile.png"></div>
+            <?php endif; ?>
+        </div>
+        <div style="text-align: center; margin-top: 40px;">
+            <a href="gallery.php" class="btn outline-btn"><?php echo t('view_all_gallery'); ?></a>
         </div>
     </section>
 

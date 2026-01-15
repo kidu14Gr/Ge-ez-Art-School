@@ -69,10 +69,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $db = getDB();
-    $stmt = $db->prepare('SELECT id, name, email, password, role, status FROM users WHERE email = ? AND role = ? LIMIT 1');
+    $stmt = $db->prepare('SELECT id, name, email, password, role, status, avatar FROM users WHERE email = ? AND role = ? LIMIT 1');
     $stmt->bind_param('ss', $email, $role);
     $stmt->execute();
-    $stmt->bind_result($id, $name, $email_db, $hash, $role_db, $status_db);
+    $stmt->bind_result($id, $name, $email_db, $hash, $role_db, $status_db, $avatar_db);
     if ($stmt->fetch()) {
         if (password_verify($password, $hash)) {
             if ($status_db !== 'active') {
@@ -86,7 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'id' => $id,
                 'name' => $name,
                 'email' => $email_db,
-                'role' => $role_db
+                'role' => $role_db,
+                'avatar' => $avatar_db
             ];
             $stmt->close();
             if ($role_db === 'student') {

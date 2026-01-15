@@ -9,6 +9,6 @@ if (ini_get('session.use_cookies')) {
     );
 }
 session_destroy();
-header('Location: /art-school-website/index.php');
+header('Location: /art-school-website/login.php');
 exit;
 ?>

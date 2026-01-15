@@ -2,8 +2,17 @@
 require_once __DIR__ . '/php/functions.php';
 require_role('student');
 $lang = get_lang();
-$user = current_user();
 $db = getDB();
+
+// Fetch fresh user data including avatar
+$stmt = $db->prepare('SELECT * FROM users WHERE id = ?');
+$stmt->bind_param('i', $_SESSION['user']['id']);
+$stmt->execute();
+$user = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+
+// Update session with fresh avatar
+$_SESSION['user']['avatar'] = $user['avatar'];
 
 $enrolled = [];
 $stmt = $db->prepare('SELECT c.id, c.title, c.description, u.name AS teacher_name, e.created_at FROM enrollments e JOIN courses c ON e.course_id = c.id LEFT JOIN users u ON c.teacher_id = u.id WHERE e.user_id = ?');
@@ -27,17 +36,25 @@ while ($r = $res->fetch_assoc()) $events[] = $r;
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_artwork'])) {
     $title = $_POST['title'];
-    $image_path = 'images/gallery/' . basename($_FILES['artwork']['name']);
+    // Move uploaded file
+    $target_dir = __DIR__ . '/images/gallery/';
+    if (!is_dir($target_dir)) mkdir($target_dir, 0777, true);
     
-    // In a real app, we'd move the uploaded file. For this demo, we'll assume it exists or use a dummy path.
-    // move_uploaded_file($_FILES['artwork']['tmp_name'], $image_path);
-    
-    $stmt = $db->prepare('INSERT INTO artworks (student_id, title, image_path) VALUES (?, ?, ?)');
-    $stmt->bind_param('iss', $user['id'], $title, $image_path);
-    if ($stmt->execute()) {
-        $message = "Artwork submitted for approval!";
+    $file_ext = strtolower(pathinfo($_FILES['artwork']['name'], PATHINFO_EXTENSION));
+    $filename = uniqid('art_') . '.' . $file_ext;
+    $target_file = $target_dir . $filename;
+    $db_path = 'images/gallery/' . $filename;
+
+    if (move_uploaded_file($_FILES['artwork']['tmp_name'], $target_file)) {
+        $stmt = $db->prepare('INSERT INTO artworks (student_id, title, image_path) VALUES (?, ?, ?)');
+        $stmt->bind_param('iss', $user['id'], $title, $db_path);
+        if ($stmt->execute()) {
+            $message = "Artwork submitted for approval!";
+        }
+        $stmt->close();
+    } else {
+        $message = "Error uploading file.";
     }
-    $stmt->close();
 }
 ?>
 <!doctype html>
@@ -68,6 +85,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_artwork'])) {
                 <a href="?lang=am" class="lang-btn <?php echo $lang === 'am' ? 'active' : ''; ?>">አማ</a>
             </div>
             <div class="nav-divider"></div>
+            <div class="theme-toggle" id="themeToggle">
+                <button class="theme-toggle-btn active" data-theme="light">☀️</button>
+                <button class="theme-toggle-btn" data-theme="dark">🌙</button>
+            </div>
+            <div class="nav-divider"></div>
             <a href="/art-school-website/logout.php" class="nav-login"><?php echo t('logout'); ?></a>
         </nav>
     </div>
@@ -80,16 +102,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_artwork'])) {
     <div class="dashboard-grid">
         <!-- Sidebar -->
         <aside class="sidebar-card reveal active">
-            <div class="user-avatar">
-                <?php echo strtoupper(substr($user['name'], 0, 1)); ?>
+            <div class="user-avatar" style="overflow: hidden;">
+                <?php if (!empty($user['avatar'])): ?>
+                    <img src="<?php echo htmlspecialchars($user['avatar']); ?>" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                <?php else: ?>
+                    <?php echo strtoupper(substr($user['name'], 0, 1)); ?>
+                <?php endif; ?>
             </div>
             <div style="text-align: center;">
                 <h3 style="margin-bottom: 5px;"><?php echo htmlspecialchars($user['name']); ?></h3>
                 <p class="muted" style="font-size: 0.85rem;"><?php echo htmlspecialchars($user['email']); ?></p>
+                <?php if (!empty($user['bio'])): ?>
+                    <p class="muted" style="font-size: 0.8rem; margin-top: 8px; font-style: italic;"><?php echo htmlspecialchars($user['bio']); ?></p>
+                <?php endif; ?>
             </div>
             
             <nav class="sidebar-nav">
                 <a href="#" class="active"><?php echo t('overview'); ?></a>
+                <a href="/art-school-website/profile-student.php"><?php echo t('profile_settings'); ?></a>
                 <a href="/art-school-website/courses.php"><?php echo t('explore_courses'); ?></a>
                 <a href="#"><?php echo t('my_assignments'); ?></a>
                 <a href="#"><?php echo t('studio_bookings'); ?></a>

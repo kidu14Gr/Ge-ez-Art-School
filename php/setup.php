@@ -19,6 +19,8 @@ $users = "CREATE TABLE IF NOT EXISTS users (
     role ENUM('student','teacher','admin') NOT NULL DEFAULT 'student',
     status ENUM('active','inactive','pending') NOT NULL DEFAULT 'active',
     bio TEXT,
+    phone VARCHAR(20),
+    avatar VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 $db->query($users);

@@ -3,6 +3,16 @@ require_once __DIR__ . '/php/functions.php';
 $lang = get_lang();
 $db = getDB();
 
+// Update session with fresh avatar for logged-in students
+if (!empty($_SESSION['user']) && $_SESSION['user']['role'] === 'student') {
+    $stmt = $db->prepare('SELECT avatar FROM users WHERE id = ?');
+    $stmt->bind_param('i', $_SESSION['user']['id']);
+    $stmt->execute();
+    $result = $stmt->get_result()->fetch_assoc();
+    $_SESSION['user']['avatar'] = $result['avatar'];
+    $stmt->close();
+}
+
 // handle enrollment post
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enroll_course_id'])) {
     if (empty($_SESSION['user']) || $_SESSION['user']['role'] !== 'student') {
@@ -21,12 +31,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enroll_course_id'])) 
     exit;
 }
 
-// pull courses from DB
-$courses = [];
-$res = $db->query('SELECT c.id, c.title, c.slug, c.description, u.name AS teacher_name FROM courses c LEFT JOIN users u ON c.teacher_id = u.id ORDER BY c.id');
-if ($res) {
-    while ($r = $res->fetch_assoc()) $courses[] = $r;
+// handle search and filters
+$search = $_GET['q'] ?? '';
+$category = $_GET['cat'] ?? '';
+
+$sql = "SELECT c.id, c.title, c.slug, c.description, c.category, u.name AS teacher_name FROM courses c LEFT JOIN users u ON c.teacher_id = u.id WHERE c.status = 'active'";
+
+if ($search) {
+    $s = "%$search%";
+    $sql .= " AND (c.title LIKE ? OR c.description LIKE ?)";
 }
+if ($category) {
+    $sql .= " AND c.category = ?";
+}
+$sql .= " ORDER BY c.created_at DESC";
+
+$stmt = $db->prepare($sql);
+if ($search && $category) {
+    $stmt->bind_param('sss', $s, $s, $category);
+} elseif ($search) {
+    $stmt->bind_param('ss', $s, $s);
+} elseif ($category) {
+    $stmt->bind_param('s', $category);
+}
+$stmt->execute();
+$res = $stmt->get_result();
+$courses = [];
+while ($r = $res->fetch_assoc()) $courses[] = $r;
+$stmt->close();
+
+// Fetch categories for filter
+$categories = [];
+$cat_res = $db->query("SELECT DISTINCT category FROM courses WHERE category IS NOT NULL AND status = 'active'");
+while($cr = $cat_res->fetch_assoc()) $categories[] = $cr['category'];
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -42,7 +79,7 @@ unset($_SESSION['flash']);
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@100..900&display=swap" rel="stylesheet">
 </head>
-<body class="smooth-scroll">
+<body class="<?php echo (!empty($_SESSION['user']) && $_SESSION['user']['role'] === 'student') ? 'dashboard-wrapper' : 'smooth-scroll'; ?>">
 
 <header class="site-header scrolled">
     <div class="container header-inner">
@@ -59,6 +96,11 @@ unset($_SESSION['flash']);
                 <a href="?lang=am" class="lang-btn <?php echo $lang === 'am' ? 'active' : ''; ?>">አማ</a>
             </div>
             <div class="nav-divider"></div>
+            <div class="theme-toggle" id="themeToggle">
+                <button class="theme-toggle-btn active" data-theme="light">☀️</button>
+                <button class="theme-toggle-btn" data-theme="dark">🌙</button>
+            </div>
+            <div class="nav-divider"></div>
             <?php if (empty(current_user())): ?>
                 <a href="/art-school-website/login.php" class="nav-login"><?php echo t('login'); ?></a>
             <?php else: ?>
@@ -68,15 +110,83 @@ unset($_SESSION['flash']);
     </div>
 </header>
 
-<main class="container" style="padding-top: 140px;">
+<main class="container" style="<?php echo (!empty($_SESSION['user']) && $_SESSION['user']['role'] === 'student') ? '' : 'padding-top: 140px;'; ?>">
+    <?php if (!empty($_SESSION['user']) && $_SESSION['user']['role'] === 'student'): ?>
+        <div class="dashboard-grid">
+            <!-- Sidebar -->
+            <aside class="sidebar-card reveal active">
+                <div class="user-avatar" style="overflow: hidden;">
+                    <?php if (!empty($_SESSION['user']['avatar'])): ?>
+                        <img src="<?php echo htmlspecialchars($_SESSION['user']['avatar']); ?>" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                    <?php else: ?>
+                        <?php echo strtoupper(substr($_SESSION['user']['name'], 0, 1)); ?>
+                    <?php endif; ?>
+                </div>
+                <div style="text-align: center;">
+                    <h3 style="margin-bottom: 5px;"><?php echo htmlspecialchars($_SESSION['user']['name']); ?></h3>
+                    <p class="muted" style="font-size: 0.85rem;"><?php echo htmlspecialchars($_SESSION['user']['email']); ?></p>
+                    <?php 
+                    $bio_stmt = $db->prepare('SELECT bio FROM users WHERE id = ?');
+                    $bio_stmt->bind_param('i', $_SESSION['user']['id']);
+                    $bio_stmt->execute();
+                    $bio_result = $bio_stmt->get_result()->fetch_assoc();
+                    $bio_stmt->close();
+                    if (!empty($bio_result['bio'])): ?>
+                        <p class="muted" style="font-size: 0.8rem; margin-top: 8px; font-style: italic;"><?php echo htmlspecialchars($bio_result['bio']); ?></p>
+                    <?php endif; ?>
+                </div>
+                
+                <nav class="sidebar-nav">
+                    <a href="/art-school-website/dashboard-student.php"><?php echo t('overview'); ?></a>
+                    <a href="/art-school-website/profile-student.php"><?php echo t('profile_settings'); ?></a>
+                    <a href="/art-school-website/courses.php" class="active"><?php echo t('explore_courses'); ?></a>
+                    <a href="#"><?php echo t('my_assignments'); ?></a>
+                    <a href="#"><?php echo t('studio_bookings'); ?></a>
+                    <a href="#"><?php echo t('settings'); ?></a>
+                </nav>
+            </aside>
+
+            <!-- Main Content -->
+            <div class="dashboard-content">
+    <?php else: ?>
+        <div style="padding-top: 140px;">
+    <?php endif; ?>
+
     <div class="section-header">
         <span class="eyebrow"><?php echo t('academic_catalog'); ?></span>
         <h2><?php echo t('courses_catalog_title'); ?></h2>
     </div>
 
+    <!-- Search and Filter Bar -->
+    <div class="content-card" style="margin-bottom: 40px; padding: 25px;">
+        <form method="GET" style="display: grid; grid-template-columns: 1fr auto auto; gap: 15px; align-items: end;">
+            <input type="hidden" name="lang" value="<?php echo $lang; ?>">
+            <div class="input-group" style="margin: 0;">
+                <input type="text" name="q" value="<?php echo htmlspecialchars($search); ?>" placeholder=" " style="padding-right: 40px;">
+                <label>Search by title or keyword</label>
+            </div>
+            <div class="input-group" style="margin: 0;">
+                <select name="cat" onchange="this.form.submit()">
+                    <option value="" disabled selected></option>
+                    <option value="">All Categories</option>
+                    <?php foreach ($categories as $cat): ?>
+                        <option value="<?php echo htmlspecialchars($cat); ?>" <?php echo $category === $cat ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($cat); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <label>Category</label>
+            </div>
+            <button type="submit" class="btn premium-btn" style="height: 50px;">Apply</button>
+        </form>
+    </div>
+
     <?php if ($flash): ?><div class="flash"><?php echo htmlspecialchars($flash); ?></div><?php endif; ?>
 
     <div class="programs-grid">
+        <?php if (empty($courses)): ?>
+            <p class="muted" style="grid-column: 1/-1; text-align: center; padding: 40px;">No courses found matching your criteria.</p>
+        <?php endif; ?>
         <?php
         $course_images = [
             'Traditional Painting' => 'traditional_painting.png',
@@ -104,8 +214,10 @@ unset($_SESSION['flash']);
                 <div class="card-info">
                     <h3><?php echo htmlspecialchars($c['title']); ?></h3>
                     <p class="muted" style="margin-bottom: 8px;"><?php echo t('instructor'); ?>: <?php echo htmlspecialchars($c['teacher_name'] ?? 'TBD'); ?></p>
-                    <p style="margin-bottom: 24px;"><?php echo htmlspecialchars($c['description']); ?></p>
+                    <p style="margin-bottom: 12px;"><?php echo htmlspecialchars($c['description']); ?></p>
                     
+                    <a href="/art-school-website/course-details.php?id=<?php echo $c['id']; ?>" class="link-btn" style="display:inline-block; margin-bottom: 15px; font-weight: 600; font-size: 0.85rem; color: var(--accent);"><?php echo t('view_details'); ?> →</a>
+
                     <?php if (!empty($_SESSION['user']) && $_SESSION['user']['role'] === 'student'): ?>
                         <?php if (is_enrolled($_SESSION['user']['id'], $c['id'])): ?>
                             <span class="btn outline-btn" style="color: var(--accent); border-color: var(--accent); width: 100%; text-align: center;"><?php echo t('enrolled'); ?></span>
@@ -122,6 +234,13 @@ unset($_SESSION['flash']);
             </article>
         <?php endforeach; ?>
     </div>
+
+    <?php if (!empty($_SESSION['user']) && $_SESSION['user']['role'] === 'student'): ?>
+            </div>
+        </div>
+    <?php else: ?>
+        </div>
+    <?php endif; ?>
 </main>
 
 <footer class="minimal-footer">

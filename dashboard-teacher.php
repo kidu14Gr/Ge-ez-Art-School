@@ -2,8 +2,14 @@
 require_once __DIR__ . '/php/functions.php';
 require_role('teacher');
 $lang = get_lang();
-$user = current_user();
 $db = getDB();
+
+// Fetch fresh user data including avatar and bio
+$stmt = $db->prepare('SELECT * FROM users WHERE id = ?');
+$stmt->bind_param('i', $_SESSION['user']['id']);
+$stmt->execute();
+$user = $stmt->get_result()->fetch_assoc();
+$stmt->close();
 
 $courses = [];
 $stmt = $db->prepare('SELECT id, title, description FROM courses WHERE teacher_id = ?');
@@ -53,6 +59,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['grade_submission'])) 
     $stmt->bind_param('ssi', $grade, $feedback, $sid);
     if ($stmt->execute()) {
         $message = "Submission graded successfully.";
+        // Notify student
+        $s_stmt = $db->prepare('SELECT e.user_id, c.title FROM submissions s JOIN enrollments e ON s.enrollment_id = e.id JOIN courses c ON e.course_id = c.id WHERE s.id = ?');
+        $s_stmt->bind_param('i', $sid);
+        $s_stmt->execute();
+        $sub_info = $s_stmt->get_result()->fetch_assoc();
+        $s_stmt->close();
+        
+        if ($sub_info) {
+            add_notification($sub_info['user_id'], "Your submission for " . $sub_info['title'] . " has been graded.");
+        }
     }
     $stmt->close();
 }
@@ -85,6 +101,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['grade_submission'])) 
                 <a href="?lang=am" class="lang-btn <?php echo $lang === 'am' ? 'active' : ''; ?>">አማ</a>
             </div>
             <div class="nav-divider"></div>
+            <div class="theme-toggle" id="themeToggle">
+                <button class="theme-toggle-btn active" data-theme="light">☀️</button>
+                <button class="theme-toggle-btn" data-theme="dark">🌙</button>
+            </div>
+            <div class="nav-divider"></div>
             <a href="/art-school-website/logout.php" class="nav-login"><?php echo t('logout'); ?></a>
         </nav>
     </div>
@@ -97,16 +118,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['grade_submission'])) 
     <div class="dashboard-grid">
         <!-- Sidebar -->
         <aside class="sidebar-card reveal active">
-            <div class="user-avatar" style="background: var(--highlight);">
-                <?php echo strtoupper(substr($user['name'], 0, 1)); ?>
+            <div class="user-avatar" style="background: var(--highlight); overflow: hidden;">
+                <?php if (!empty($user['avatar'])): ?>
+                    <img src="<?php echo htmlspecialchars($user['avatar']); ?>" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                <?php else: ?>
+                    <?php echo strtoupper(substr($user['name'], 0, 1)); ?>
+                <?php endif; ?>
             </div>
             <div style="text-align: center;">
                 <h3 style="margin-bottom: 5px;"><?php echo htmlspecialchars($user['name']); ?></h3>
                 <p class="muted" style="font-size: 0.85rem;"><?php echo t('mentor'); ?> • <?php echo htmlspecialchars($user['email']); ?></p>
+                <?php if (!empty($user['bio'])): ?>
+                    <p class="muted" style="font-size: 0.8rem; margin-top: 8px; font-style: italic;"><?php echo htmlspecialchars($user['bio']); ?></p>
+                <?php endif; ?>
             </div>
             
             <nav class="sidebar-nav">
                 <a href="#" class="active"><?php echo t('teaching_overview'); ?></a>
+                <a href="/art-school-website/profile-teacher.php"><?php echo t('profile_settings'); ?></a>
                 <a href="#"><?php echo t('my_schedule'); ?></a>
                 <a href="#"><?php echo t('curriculum_manager'); ?></a>
                 <a href="#"><?php echo t('student_feedback'); ?></a>
@@ -218,7 +247,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['grade_submission'])) 
                             <label>Grade (e.g. A, 95, Pass)</label>
                         </div>
                         <div class="input-group">
-                            <textarea name="feedback" placeholder="Feedback" style="width:100%; min-height:100px; border:2px solid #eee; border-radius:12px; padding:12px;"></textarea>
+                            <textarea name="feedback" placeholder=" " style="width:100%; min-height:100px; border:2px solid #eee; border-radius:12px; padding:12px;"></textarea>
+                            <label>Feedback</label>
                         </div>
                         <div style="display:flex; gap:10px; margin-top:20px;">
                             <button type="submit" class="btn premium-btn">Submit Grade</button>

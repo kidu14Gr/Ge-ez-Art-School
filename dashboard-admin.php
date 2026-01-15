@@ -3,8 +3,14 @@ require_once __DIR__ . '/php/functions.php';
 require_role('admin');
 
 $lang = get_lang();
-$user = current_user();
 $db = getDB();
+
+// Fetch fresh user data including avatar and bio
+$stmt = $db->prepare('SELECT * FROM users WHERE id = ?');
+$stmt->bind_param('i', $_SESSION['user']['id']);
+$stmt->execute();
+$user = $stmt->get_result()->fetch_assoc();
+$stmt->close();
 
 $section = $_GET['section'] ?? 'overview';
 $message = '';
@@ -148,6 +154,11 @@ $stats = [
                 <a href="?section=<?php echo $section; ?>&lang=am" class="lang-btn <?php echo $lang === 'am' ? 'active' : ''; ?>">አማ</a>
             </div>
             <div class="nav-divider"></div>
+            <div class="theme-toggle" id="themeToggle">
+                <button class="theme-toggle-btn active" data-theme="light">☀️</button>
+                <button class="theme-toggle-btn" data-theme="dark">🌙</button>
+            </div>
+            <div class="nav-divider"></div>
             <a href="/art-school-website/logout.php" class="nav-login"><?php echo t('logout'); ?></a>
         </nav>
     </div>
@@ -161,10 +172,19 @@ $stats = [
     <div class="dashboard-grid">
         <!-- Sidebar -->
         <aside class="sidebar-card admin-sidebar reveal active">
-            <div class="user-avatar">A</div>
+            <div class="user-avatar" style="overflow: hidden;">
+                <?php if (!empty($user['avatar'])): ?>
+                    <img src="<?php echo htmlspecialchars($user['avatar']); ?>" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                <?php else: ?>
+                    <?php echo strtoupper(substr($user['name'], 0, 1)); ?>
+                <?php endif; ?>
+            </div>
             <div style="text-align: center;">
                 <h3 style="margin-bottom: 5px;"><?php echo htmlspecialchars($user['name']); ?></h3>
                 <p class="muted" style="font-size: 0.85rem;">System Administrator</p>
+                <?php if (!empty($user['bio'])): ?>
+                    <p class="muted" style="font-size: 0.8rem; margin-top: 8px; font-style: italic;"><?php echo htmlspecialchars($user['bio']); ?></p>
+                <?php endif; ?>
             </div>
             
             <nav class="sidebar-nav">

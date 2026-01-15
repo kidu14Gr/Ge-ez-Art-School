@@ -13,6 +13,24 @@
   --card: #fff;
   --text-main: #1a1a1a;
   --premium-shadow: 0 20px 40px rgba(0,0,0,0.05);
+  --border-color: #eee;
+  --input-bg: rgba(255, 255, 255, 0.9);
+  --header-bg: rgba(255, 255, 255, 0.98);
+}
+
+/* Dark mode colors */
+body.dark-mode {
+  --accent: #c74444;
+  --highlight: #e6b17a;
+  --muted: #aaa;
+  --bg: #1a1a1a;
+  --bg-soft: #222;
+  --card: #2a2a2a;
+  --text-main: #e4e4e4;
+  --premium-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  --border-color: #444;
+  --input-bg: rgba(42, 42, 42, 0.9);
+  --header-bg: rgba(26, 26, 26, 0.98);
 }
 
 /* Global styles */
@@ -32,6 +50,7 @@ body {
   background: var(--bg);
   line-height: 1.6;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 h1, h2, h3, .site-name {
@@ -63,12 +82,12 @@ a {
 }
 
 .site-header.scrolled {
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--header-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   padding: 12px 0;
   box-shadow: 0 10px 40px rgba(0,0,0,0.06), 0 1px 0 rgba(0,0,0,0.03);
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .header-inner {
@@ -579,7 +598,7 @@ body.js-ready .reveal.active {
   max-width: 400px;
   width: 100%;
   padding: 40px;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--card);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-radius: 20px;
@@ -622,15 +641,18 @@ body.js-ready .reveal.active {
 }
 
 .input-group input,
-.input-group select {
+.input-group select,
+.input-group textarea {
   width: 100%;
   padding: 12px 16px;
   border-radius: 12px;
-  border: 2px solid #eee;
-  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text-main);
   font-size: 1rem;
   transition: all 0.3s ease;
   outline: none;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 .input-group label {
@@ -645,14 +667,31 @@ body.js-ready .reveal.active {
   padding: 0 4px;
 }
 
+.input-group textarea + label {
+  top: 16px;
+  transform: translateY(0);
+}
+
 .input-group input:focus + label,
 .input-group input:not(:placeholder-shown) + label,
 .input-group select:focus + label,
 .input-group select:valid + label {
   top: 0;
+  transform: translateY(-50%);
   font-size: 0.85rem;
   color: var(--accent);
-  background: white;
+  background: var(--bg);
+  padding: 0 8px;
+  font-weight: 600;
+}
+
+.input-group textarea:focus + label,
+.input-group textarea:not(:placeholder-shown) + label {
+  top: -8px;
+  transform: translateY(0);
+  font-size: 0.85rem;
+  color: var(--accent);
+  background: var(--bg);
   padding: 0 8px;
   font-weight: 600;
 }
@@ -684,7 +723,7 @@ body.js-ready .reveal.active {
 }
 
 .sidebar-card {
-  background: #fff;
+  background: var(--card);
   padding: 30px;
   border-radius: 20px;
   box-shadow: var(--premium-shadow);
@@ -756,7 +795,7 @@ body.js-ready .reveal.active {
 }
 
 .content-card {
-  background: #fff;
+  background: var(--card);
   padding: 40px;
   border-radius: 20px;
   box-shadow: var(--premium-shadow);
@@ -901,7 +940,7 @@ body.js-ready .reveal.active {
 }
 
 .modal-content {
-  background: #fff;
+  background: var(--card);
   padding: 40px;
   border-radius: 20px;
   max-width: 600px;
@@ -928,4 +967,50 @@ body.js-ready .reveal.active {
   .stats-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* Dark Mode Toggle */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0f0f0;
+  padding: 6px;
+  border-radius: 30px;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .theme-toggle {
+  background: #333;
+  border-color: #555;
+}
+
+.theme-toggle-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  opacity: 0.5;
+}
+
+.theme-toggle-btn.active {
+  background: var(--text-main);
+  opacity: 1;
+}
+
+body.dark-mode .theme-toggle-btn.active {
+  background: #fff;
+}
+
+.theme-toggle-btn:hover {
+  opacity: 0.8;
 }
