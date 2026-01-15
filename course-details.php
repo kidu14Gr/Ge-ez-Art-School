@@ -78,6 +78,12 @@ unset($_SESSION['flash']);
     <title><?php echo htmlspecialchars($course['title']); ?> - <?php echo t('site_title'); ?></title>
     <link rel="stylesheet" href="/art-school-website/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.style.colorScheme = 'dark';
+            document.documentElement.classList.add('dark-mode-pending');
+        }
+    </script>
 </head>
 <body class="<?php echo (!empty($_SESSION['user']) && $_SESSION['user']['role'] === 'student') ? 'dashboard-wrapper' : 'smooth-scroll'; ?>">
 
@@ -92,8 +98,7 @@ unset($_SESSION['flash']);
             <a href="/art-school-website/courses.php"><?php echo t('nav_programs'); ?></a>
             <div class="nav-divider"></div>
             <div class="theme-toggle" id="themeToggle">
-                <button class="theme-toggle-btn active" data-theme="light">☀️</button>
-                <button class="theme-toggle-btn" data-theme="dark">🌙</button>
+                <button class="theme-toggle-btn">🌙</button>
             </div>
             <div class="nav-divider"></div>
             <?php if (empty(current_user())): ?>

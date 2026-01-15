@@ -60,6 +60,12 @@ $stmt->close();
     <title><?php echo t('curriculum_manager'); ?> - <?php echo t('site_title'); ?></title>
     <link rel="stylesheet" href="/art-school-website/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.style.colorScheme = 'dark';
+            document.documentElement.classList.add('dark-mode-pending');
+        }
+    </script>
 </head>
 <body class="dashboard-wrapper">
 

@@ -12,6 +12,12 @@ $lang = get_lang();
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <script>
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.style.colorScheme = 'dark';
+            document.documentElement.classList.add('dark-mode-pending');
+        }
+    </script>
 </head>
 <body class="smooth-scroll">
 
@@ -33,8 +39,7 @@ $lang = get_lang();
             </div>
             <div class="nav-divider"></div>
             <div class="theme-toggle" id="themeToggle">
-                <button class="theme-toggle-btn active" data-theme="light">☀️</button>
-                <button class="theme-toggle-btn" data-theme="dark">🌙</button>
+                <button class="theme-toggle-btn">🌙</button>
             </div>
             <div class="nav-divider"></div>
             <?php if (empty(current_user())): ?>

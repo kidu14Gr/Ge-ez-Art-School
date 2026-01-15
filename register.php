@@ -11,6 +11,12 @@ unset($_SESSION['flash']);
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title><?php echo t('apply'); ?> - <?php echo t('site_title'); ?></title>
     <link rel="stylesheet" href="/art-school-website/css/style.css">
+    <script>
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.style.colorScheme = 'dark';
+            document.documentElement.classList.add('dark-mode-pending');
+        }
+    </script>
 </head>
 <body>
 <div class="auth-wrapper">

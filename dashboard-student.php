@@ -67,6 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_artwork'])) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.style.colorScheme = 'dark';
+            document.documentElement.classList.add('dark-mode-pending');
+        }
+    </script>
 </head>
 <body class="dashboard-wrapper">
 
@@ -86,8 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_artwork'])) {
             </div>
             <div class="nav-divider"></div>
             <div class="theme-toggle" id="themeToggle">
-                <button class="theme-toggle-btn active" data-theme="light">☀️</button>
-                <button class="theme-toggle-btn" data-theme="dark">🌙</button>
+                <button class="theme-toggle-btn">🌙</button>
             </div>
             <div class="nav-divider"></div>
             <a href="/art-school-website/logout.php" class="nav-login"><?php echo t('logout'); ?></a>

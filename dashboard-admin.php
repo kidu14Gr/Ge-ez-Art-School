@@ -133,6 +133,12 @@ $stats = [
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.style.colorScheme = 'dark';
+            document.documentElement.classList.add('dark-mode-pending');
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .admin-sidebar { height: calc(100vh - 120px); position: sticky; top: 120px; }
@@ -155,8 +161,7 @@ $stats = [
             </div>
             <div class="nav-divider"></div>
             <div class="theme-toggle" id="themeToggle">
-                <button class="theme-toggle-btn active" data-theme="light">☀️</button>
-                <button class="theme-toggle-btn" data-theme="dark">🌙</button>
+                <button class="theme-toggle-btn">🌙</button>
             </div>
             <div class="nav-divider"></div>
             <a href="/art-school-website/logout.php" class="nav-login"><?php echo t('logout'); ?></a>

@@ -178,7 +178,30 @@ $TRANSLATIONS = [
         'write_comment_placeholder' => 'Share your thoughts or ask a question...',
         'post_comment' => 'Post Comment',
         'login_to_comment' => 'Please login to join the discussion.',
-        'no_comments_yet' => 'No comments yet. Be the first to start the conversation!'
+        'no_comments_yet' => 'No comments yet. Be the first to start the conversation!',
+        
+        // New missing translations
+        'category' => 'Category',
+        'search_by_keyword' => 'Search by title or keyword',
+        'submit_gallery' => 'Submit to Gallery',
+        'artwork_title' => 'Artwork Title',
+        'browse' => 'Browse...',
+        'no_file_selected' => 'No file selected',
+        'upload_approval' => 'Upload for Approval',
+        'my_artworks' => 'MY ARTWORKS',
+        'recent_submissions' => 'Recent Submissions',
+        'no_recent_submissions' => 'No recent submissions.',
+        'title' => 'Title',
+        'status' => 'Status',
+        'actions' => 'Actions',
+        'recent_enrollments' => 'Recent Enrollments',
+        'system_status' => 'System Status',
+        'server_health' => 'Server Health',
+        'optimal' => 'OPTIMAL',
+        'db_connections' => 'DB Connections',
+        'active' => 'ACTIVE',
+        'pending_artworks' => 'Pending Artworks',
+        'date' => 'Date'
     ],
     'am' => [
         'site_title' => 'የግእዝ ስነ-ጥበብ ትምህርት ቤት',
@@ -357,7 +380,30 @@ $TRANSLATIONS = [
         'write_comment_placeholder' => 'ሀሳብዎን ያካፍሉ ወይም ጥያቄ ይጠይቁ...',
         'post_comment' => 'አስተያየት ይለጥፉ',
         'login_to_comment' => 'እባክዎን በውይይቱ ለመሳተፍ ይግቡ።',
-        'no_comments_yet' => 'እስካሁን ምንም አስተያየቶች የሉም። ውይይቱን ለመጀመር የመጀመሪያው ይሁኑ!'
+        'no_comments_yet' => 'እስካሁን ምንም አስተያየቶች የሉም። ውይይቱን ለመጀመር የመጀመሪያው ይሁኑ!',
+        
+        // New missing translations in Amharic
+        'category' => 'ምድብ',
+        'search_by_keyword' => 'በርዕስ ወይም ቁልፍ ቃል ይፈልጉ',
+        'submit_gallery' => 'ለጋለሪ ያስገቡ',
+        'artwork_title' => 'ስራ ርዕስ',
+        'browse' => 'ይሳምሩ...',
+        'no_file_selected' => 'ምንም ፋይል አልተመረጠም',
+        'upload_approval' => 'ለቅጅ ይሰቀሉ',
+        'my_artworks' => 'የእኔ ስራዎች',
+        'recent_submissions' => 'ቅርብ ጊዜ የተላከ',
+        'no_recent_submissions' => 'ምንም ቅርብ ጊዜ ስራ የለም።',
+        'title' => 'ርዕስ',
+        'status' => 'ሁኔታ',
+        'actions' => 'ድርጊቶች',
+        'recent_enrollments' => 'ቅርብ ጊዜ ምዝገባዎች',
+        'system_status' => 'የስርዓት ሁኔታ',
+        'server_health' => 'የሰርቨር ጤና',
+        'optimal' => 'ምርጥ',
+        'db_connections' => 'የዳታቤዝ ግንኙነቶች',
+        'active' => 'ንቁ',
+        'pending_artworks' => 'በጥበቃ ላይ ያሉ ስራዎች',
+        'date' => 'ቀን'
     ]
 ];
 ?>

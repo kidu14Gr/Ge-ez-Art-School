@@ -2,6 +2,12 @@
 document.addEventListener('DOMContentLoaded', function() {
     document.body.classList.add('js-ready');
     
+    // Apply dark-mode class to body if it was pending
+    if (document.documentElement.classList.contains('dark-mode-pending')) {
+        document.documentElement.classList.remove('dark-mode-pending');
+        document.body.classList.add('dark-mode');
+    }
+    
     // 1. Header Scroll Effect
     const header = document.querySelector('.site-header');
     if (header) {
@@ -47,30 +53,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 3. Lightbox Gallery
     const lightbox = document.getElementById('lightbox');
-    const lightboxImg = lightbox.querySelector('.lightbox-img');
-    const galleryItems = document.querySelectorAll('.gallery-item img');
-    const closeLightbox = document.querySelector('.close-lightbox');
+    if (lightbox) {
+        const lightboxImg = lightbox.querySelector('.lightbox-img');
+        const galleryItems = document.querySelectorAll('.gallery-item img');
+        const closeLightbox = document.querySelector('.close-lightbox');
 
-    galleryItems.forEach(img => {
-        img.addEventListener('click', () => {
-            const fullSrc = img.getAttribute('data-full');
-            lightboxImg.src = fullSrc;
-            lightbox.classList.add('active');
-            document.body.style.overflow = 'hidden'; // Prevent scroll
+        galleryItems.forEach(img => {
+            img.addEventListener('click', () => {
+                const fullSrc = img.getAttribute('data-full');
+                lightboxImg.src = fullSrc;
+                lightbox.classList.add('active');
+                document.body.style.overflow = 'hidden'; // Prevent scroll
+            });
         });
-    });
 
-    closeLightbox.addEventListener('click', () => {
-        lightbox.classList.remove('active');
-        document.body.style.overflow = 'auto';
-    });
-
-    lightbox.addEventListener('click', (e) => {
-        if (e.target === lightbox) {
+        closeLightbox.addEventListener('click', () => {
             lightbox.classList.remove('active');
             document.body.style.overflow = 'auto';
-        }
-    });
+        });
+
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) {
+                lightbox.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        });
+    }
 
     // 4. Smooth Scrolling for Nav Links (Standard behavior is fine with CSS, but JS handles edge cases)
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -125,4 +133,61 @@ document.addEventListener('DOMContentLoaded', function() {
             tourForm.reset();
         });
     }
+
+    // 7. Dark Mode Toggle
+    const applyTheme = (isDark) => {
+        if (isDark) {
+            document.body.classList.add('dark-mode');
+        } else {
+            document.body.classList.remove('dark-mode');
+        }
+        localStorage.setItem('darkMode', isDark ? 'true' : 'false');
+    };
+
+    // Load saved theme on page load
+    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+    applyTheme(savedDarkMode);
+
+    // Setup click handler for all theme toggle buttons
+    const themeButtons = document.querySelectorAll('.theme-toggle-btn');
+    themeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const isDarkNow = document.body.classList.contains('dark-mode');
+            applyTheme(!isDarkNow);
+        });
+    });
+
+    // 8. Password Toggle Eye Icon
+    const passwordInputs = document.querySelectorAll('input[type="password"]');
+    passwordInputs.forEach(input => {
+        const wrapper = input.parentElement;
+        const eyeIcon = document.createElement('span');
+        eyeIcon.innerHTML = '👁️';
+        eyeIcon.style.cursor = 'pointer';
+        eyeIcon.style.position = 'absolute';
+        eyeIcon.style.right = '12px';
+        eyeIcon.style.top = '50%';
+        eyeIcon.style.transform = 'translateY(-50%)';
+        eyeIcon.style.fontSize = '18px';
+        eyeIcon.style.userSelect = 'none';
+        eyeIcon.style.opacity = '0.6';
+        eyeIcon.style.transition = 'opacity 0.3s ease';
+
+        wrapper.style.position = 'relative';
+        wrapper.appendChild(eyeIcon);
+
+        eyeIcon.addEventListener('click', () => {
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            eyeIcon.style.opacity = isPassword ? '1' : '0.6';
+        });
+
+        eyeIcon.addEventListener('mouseover', () => {
+            eyeIcon.style.opacity = '1';
+        });
+
+        eyeIcon.addEventListener('mouseout', () => {
+            eyeIcon.style.opacity = input.type === 'text' ? '1' : '0.6';
+        });
+    });
 });
