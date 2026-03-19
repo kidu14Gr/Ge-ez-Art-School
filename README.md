@@ -27,6 +27,8 @@ English
 
 Amharic (ግዕዝ): Full regional script support across all UI components and dashboards.
 
+The system supports bilingual usage (English and Amharic) and includes a dark/light mode toggle for accessibility and user preference.
+
 🛠 Tech Stack
 Frontend: Vanilla HTML5, CSS3 (Custom Variables for Dark Mode), JavaScript (ES6+).
 
